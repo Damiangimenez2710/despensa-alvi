@@ -17,63 +17,47 @@ if ('serviceWorker' in navigator) {
 </script>
 
 <style>
-*{box-sizing:border-box;font-family:Arial,Helvetica,sans-serif}
+*{box-sizing:border-box;font-family:Arial}
 body{margin:0;background:#f1f3f4}
-header{display:flex;justify-content:space-between;align-items:center;padding:18px 28px;background:white;box-shadow:0 1px 5px rgba(0,0,0,.1)}
-header h2{margin:0;cursor:pointer}
-header .actions{display:flex;gap:12px}
-header button{padding:10px 16px;border-radius:20px;border:none;cursor:pointer;background:#1a73e8;color:white}
-header button.secondary{background:#e8eaed;color:#000}
+header{display:flex;justify-content:space-between;align-items:center;padding:18px;background:white}
+header button{padding:10px 16px;border-radius:20px;border:none;background:#1a73e8;color:white}
 .container{max-width:900px;margin:auto;padding:20px}
-.card{background:white;border-radius:16px;padding:20px;margin-bottom:20px;box-shadow:0 2px 8px rgba(0,0,0,.05)}
-input,select{width:100%;padding:14px;margin-bottom:12px;border-radius:10px;border:1px solid #ccc}
-.soft-btn{width:100%;padding:15px;border-radius:12px;border:none;background:#1a73e8;color:white;cursor:pointer}
-.delete-btn{background:#e53935;margin-top:8px}
-.table-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0}
+.card{background:white;border-radius:14px;padding:16px;margin-bottom:14px}
+input,select{width:100%;padding:12px;margin-bottom:10px;border-radius:8px;border:1px solid #ccc}
+button{cursor:pointer}
 </style>
 </head>
 
 <body>
 
 <header>
-  <h2 onclick="goHome()">Despensa Alvi</h2>
-  <div class="actions">
-    <button onclick="showAdd()">Agregar</button>
-    <button class="secondary" onclick="showList()">Lista</button>
-  </div>
+  <h2>Despensa Alvi</h2>
+  <button onclick="showAdd()">Agregar</button>
+  <button onclick="showList()">Lista</button>
 </header>
 
 <div class="container">
 
-<div id="homeView"></div>
-
 <div id="addView" style="display:none">
 
-  <!-- CATEGORÍAS -->
-  <div class="card">
-    <h3>Nueva categoría</h3>
-    <input id="catName" placeholder="Nombre de la categoría">
-    <input id="catMargin" type="number" placeholder="% ganancia">
-    <button class="soft-btn" onclick="addCategory()">Agregar categoría</button>
-  </div>
+<div class="card">
+<h3>Categoría</h3>
+<input id="catName" placeholder="Nombre">
+<input id="catMargin" type="number" placeholder="Ganancia %">
+<button onclick="addCategory()">Agregar</button>
+</div>
 
-  <div class="card">
-    <h3>Categorías existentes</h3>
-    <div id="categoryList"></div>
-  </div>
-
-  <!-- PRODUCTOS -->
-  <div class="card">
-    <h3>Producto</h3>
-    <input id="prodName" placeholder="Nombre del producto">
-    <select id="prodCat"></select>
-    <input id="prodCost" type="number" placeholder="Precio">
-    <button class="soft-btn" onclick="saveProduct()">Guardar producto</button>
-  </div>
+<div class="card">
+<h3>Producto</h3>
+<input id="prodName" placeholder="Nombre">
+<select id="prodCat"></select>
+<input id="prodCost" type="number" placeholder="Precio">
+<button onclick="saveProduct()">Guardar</button>
+</div>
 
 </div>
 
-<div id="listView" style="display:none"></div>
+<div id="listView"></div>
 
 </div>
 
@@ -81,95 +65,83 @@ input,select{width:100%;padding:14px;margin-bottom:12px;border-radius:10px;borde
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
 <script>
-const firebaseConfig={
+firebase.initializeApp({
   apiKey:"AIzaSyDzDNWaEXQR7UFWrI3r3DhVN628iGwfqfQ",
   authDomain:"despensa-alvi-c7db7.firebaseapp.com",
   projectId:"despensa-alvi-c7db7"
-}
-firebase.initializeApp(firebaseConfig)
+})
 const db=firebase.firestore()
 
-/* NAV */
-function goHome(){homeView.style.display="block";addView.style.display="none";listView.style.display="none"}
-function showAdd(){homeView.style.display="none";addView.style.display="block";listView.style.display="none";loadCategories()}
-function showList(){homeView.style.display="none";addView.style.display="none";listView.style.display="block";renderList()}
+let editingProductId=null
 
-/* CATEGORÍAS */
-let categories=[]
-
-function loadCategories(){
-  db.collection("categories").get().then(s=>{
-    categories=s.docs.map(d=>d.data())
-    prodCat.innerHTML='<option></option>'+categories.map(c=>`<option>${c.name}</option>`).join("")
-    renderCategoryList()
-  })
+function showAdd(){
+  addView.style.display="block"
+  listView.style.display="none"
+  loadCategories()
 }
 
-function renderCategoryList(){
-  categoryList.innerHTML=""
-  categories.forEach(c=>{
-    categoryList.innerHTML+=`
-      <div class="table-row">
-        <b>${c.name}</b>
-        <button onclick="deleteCategory('${c.name}')">🗑</button>
-      </div>`
+function showList(){
+  addView.style.display="none"
+  listView.style.display="block"
+  renderList()
+}
+
+/* CATEGORÍAS */
+function loadCategories(){
+  prodCat.innerHTML=""
+  db.collection("categories").get().then(s=>{
+    s.forEach(d=>{
+      const c=d.data()
+      prodCat.innerHTML+=`<option value="${d.id}">${c.name}</option>`
+    })
   })
 }
 
 function addCategory(){
-  const name=catName.value.trim()
-  const margin=+catMargin.value
-  if(!name)return
-  db.collection("categories").doc(name).set({name,margin}).then(()=>{
-    catName.value=""
-    catMargin.value=""
-    loadCategories()
-  })
-}
-
-function deleteCategory(name){
-  if(!confirm(`Eliminar categoría "${name}" y TODOS sus productos?`))return
-
-  db.collection("products").where("category","==",name).get()
-    .then(s=>{
-      const batch=db.batch()
-      s.docs.forEach(d=>batch.delete(d.ref))
-      batch.delete(db.collection("categories").doc(name))
-      return batch.commit()
-    })
-    .then(()=>{
-      loadCategories()
-      renderList()
-    })
+  db.collection("categories").add({
+    name:catName.value,
+    margin:+catMargin.value
+  }).then(()=>{catName.value="";catMargin.value="";loadCategories()})
 }
 
 /* PRODUCTOS */
-let editingProductName=null
-
 function saveProduct(){
-  const name=prodName.value.trim()
-  const category=prodCat.value
-  const cost=+prodCost.value
-  if(!name||!category||!cost)return
-
-  const data={name,category,price:cost}
-
-  if(editingProductName&&editingProductName!==name){
-    db.collection("products").doc(editingProductName).delete()
+  const data={
+    name:prodName.value,
+    category:prodCat.value,
+    price:+prodCost.value
   }
 
-  db.collection("products").doc(name).set(data).then(()=>{
-    editingProductName=null
-    prodName.value=""
-    prodCost.value=""
-    showList()
+  if(editingProductId){
+    db.collection("products").doc(editingProductId).update(data)
+  }else{
+    db.collection("products").add(data)
+  }
+
+  editingProductId=null
+  prodName.value=""
+  prodCost.value=""
+  showList()
+}
+
+function renderList(){
+  listView.innerHTML=""
+  db.collection("products").get().then(s=>{
+    s.forEach(d=>{
+      const p=d.data()
+      listView.innerHTML+=`
+      <div class="card">
+        <b>${p.name}</b> - $${p.price}
+        <button onclick="editProduct('${d.id}')">✏️</button>
+      </div>`
+    })
   })
 }
 
-function editProduct(name){
-  db.collection("products").doc(name).get().then(d=>{
+function editProduct(id){
+  db.collection("products").doc(id).get().then(d=>{
     const p=d.data()
-    editingProductName=name
+    editingProductId=id
     showAdd()
     prodName.value=p.name
     prodCat.value=p.category
@@ -177,30 +149,7 @@ function editProduct(name){
   })
 }
 
-function deleteProduct(name){
-  if(confirm("¿Borrar producto?")){
-    db.collection("products").doc(name).delete().then(renderList)
-  }
-}
-
-/* LISTA */
-function renderList(){
-  db.collection("products").get().then(s=>{
-    listView.innerHTML=""
-    s.forEach(d=>{
-      const p=d.data()
-      listView.innerHTML+=`
-        <div class="card">
-          <b>${p.name}</b> (${p.category}) - $${p.price}
-          <button onclick="editProduct('${p.name}')">✏️</button>
-          <button onclick="deleteProduct('${p.name}')">🗑</button>
-        </div>`
-    })
-  })
-}
-
-loadCategories()
-renderList()
+showList()
 </script>
 
 </body>
