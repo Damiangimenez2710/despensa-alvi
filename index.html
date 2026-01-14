@@ -5,44 +5,219 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Despensa Alvi</title>
 
+<!-- PWA -->
 <link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#1a73e8">
+<meta name="theme-color" content="#ff6600">
+
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function() {
+    navigator.serviceWorker.register('sw.js')
+      .then(() => console.log('Service Worker registrado'))
+      .catch(err => console.log('Error SW:', err));
+  });
+}
+</script>
 
 <style>
 * { box-sizing: border-box; font-family: Arial, Helvetica, sans-serif; }
 body { margin: 0; background: #f1f3f4; }
+
+/* HEADER */
 header {
-  display: flex; justify-content: space-between; align-items: center;
-  padding: 18px 28px; background: white;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 18px 28px;
+  background: white;
   box-shadow: 0 1px 5px rgba(0,0,0,.1);
 }
+
 header h2 { margin: 0; cursor: pointer; }
-header .actions { display: flex; gap: 12px; }
-header button {
-  padding: 10px 16px; border-radius: 20px;
-  border: none; cursor: pointer;
-  background: #1a73e8; color: white;
+
+header .actions {
+  display: flex;
+  gap: 12px;
 }
-header button.secondary { background: #e8eaed; color: #000; }
+
+header button {
+  padding: 10px 16px;
+  font-size: 14px;
+  border-radius: 20px;
+  border: none;
+  cursor: pointer;
+  background: #1a73e8;
+  color: white;
+}
+
+header button.secondary {
+  background: #e8eaed;
+  color: #000;
+}
+
+/* CONTENEDOR */
 .container { max-width: 900px; margin: auto; padding: 20px; }
+
+/* BUSCADOR */
+.search-box {
+  max-width: 650px;
+  margin: 60px auto 30px;
+  position: relative;
+}
+
+.search-box input {
+  width: 100%;
+  padding: 18px 52px 18px 52px;
+  font-size: 18px;
+  border-radius: 30px;
+  border: 1px solid #dadce0;
+}
+
+.search-box input:focus {
+  outline: none;
+  border-color: #1a73e8;
+  box-shadow: 0 2px 8px rgba(26,115,232,.15);
+}
+
+.search-icon {
+  position: absolute;
+  left: auto;
+  right: 52px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.clear-icon {
+  position: absolute;
+  right: 18px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 18px;
+  color: #9aa0a6;
+  cursor: pointer;
+  display: none;
+}
+
+.clear-icon:hover {
+  color: #202124;
+}
+
+/* RESULTADOS BUSCADOR */
+#searchResults { max-width: 650px; margin: auto; }
+
+.search-card {
+  background: white;
+  border-radius: 14px;
+  padding: 14px 18px;
+  margin-bottom: 10px;
+  box-shadow: 0 2px 8px rgba(0,0,0,.05);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.search-actions button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+  margin-left: 8px;
+}
+
+/* CARD */
 .card {
-  background: white; border-radius: 16px;
-  padding: 20px; margin-bottom: 20px;
+  background: white;
+  border-radius: 16px;
+  padding: 20px;
+  margin-bottom: 20px;
   box-shadow: 0 2px 8px rgba(0,0,0,.05);
 }
-input, select {
-  width: 100%; padding: 14px; margin-bottom: 12px;
-  border-radius: 10px; border: 1px solid #ccc;
+
+/* TABLA LISTA */
+.table-header, .table-row {
+  display: grid;
+  grid-template-columns: 1fr 120px 90px;
+  padding: 10px 0;
+  align-items: center;
 }
+
+.table-header {
+  font-weight: bold;
+  border-bottom: 1px solid #ddd;
+}
+
+.table-row {
+  border-bottom: 1px solid #eee;
+}
+
+/* INPUTS */
+input, select {
+  width: 100%;
+  padding: 14px;
+  margin-bottom: 12px;
+  border-radius: 10px;
+  border: 1px solid #ccc;
+}
+
 .soft-btn {
-  width: 100%; padding: 15px;
-  border-radius: 12px; border: none;
-  background: #1a73e8; color: white;
-  cursor: pointer; margin-top: 12px;
+  width: 100%;
+  padding: 15px;
+  border-radius: 12px;
+  border: none;
+  background: #1a73e8;
+  color: white;
+  cursor: pointer;
+  margin-top: 12px;
+}
+
+/* IVA */
+.switch { margin: 16px 0; }
+
+.switch label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+}
+
+.toggle {
+  width: 42px;
+  height: 22px;
+  background: #ccc;
+  border-radius: 20px;
+  position: relative;
+}
+
+.toggle::after {
+  content: "";
+  width: 18px;
+  height: 18px;
+  background: white;
+  border-radius: 50%;
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  transition: .2s;
+}
+
+input[type="checkbox"] { display: none; }
+
+input[type="checkbox"]:checked + .toggle {
+  background: #1a73e8;
+}
+
+input[type="checkbox"]:checked + .toggle::after {
+  transform: translateX(20px);
+}
+
+.price-preview {
+  font-weight: bold;
+  color: #1a73e8;
+  margin-top: 8px;
 }
 </style>
 </head>
-
 <body>
 
 <header>
@@ -55,97 +230,197 @@ input, select {
 
 <div class="container">
 
-<div id="homeView"></div>
+<!-- HOME -->
+<div id="homeView">
+  <div class="search-box">
+    <span class="search-icon">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+        <circle cx="11" cy="11" r="7" stroke="#9aa0a6" stroke-width="2"/>
+        <line x1="16.65" y1="16.65" x2="21" y2="21"
+              stroke="#9aa0a6" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+    </span>
 
+    <input id="searchInput" placeholder="Buscar producto…" autocomplete="off">
+    <span id="clearSearch" class="clear-icon">✕</span>
+  </div>
+
+  <div id="searchResults"></div>
+</div>
+
+<!-- AGREGAR -->
 <div id="addView" style="display:none">
+  <div class="card">
+    <h3>Nueva categoría</h3>
+    <input id="catName" placeholder="Nombre de la categoría">
+    <input id="catMargin" type="number" placeholder="% de ganancia">
+    <button class="soft-btn" onclick="addCategory()">Agregar categoría</button>
+  </div>
+
   <div class="card">
     <h3>Nuevo producto</h3>
     <input id="prodName" placeholder="Nombre del producto">
     <select id="prodCat"></select>
-    <input id="prodCost" type="number" placeholder="Precio de costo">
-    <button class="soft-btn" onclick="saveProduct()">Guardar producto</button>
+    <input id="prodCost" type="number" placeholder="Precio de costo" oninput="updatePreview()">
+
+    <div class="switch">
+      <label>
+        <input type="checkbox" id="prodIva" onchange="updatePreview()">
+        <div class="toggle"></div>
+        <span>Agregar IVA (21%)</span>
+      </label>
+    </div>
+
+    <div class="price-preview" id="pricePreview"></div>
+    <button class="soft-btn" onclick="addProduct()">Guardar producto</button>
   </div>
 </div>
 
+<!-- LISTA -->
 <div id="listView" style="display:none"></div>
 
 </div>
 
+<!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
 <script>
+// --- Configuración Firebase ---
 const firebaseConfig = {
   apiKey: "AIzaSyDzDNWaEXQR7UFWrI3r3DhVN628iGwfqfQ",
   authDomain: "despensa-alvi-c7db7.firebaseapp.com",
-  projectId: "despensa-alvi-c7db7"
+  projectId: "despensa-alvi-c7db7",
+  storageBucket: "despensa-alvi-c7db7.firebasestorage.app",
+  messagingSenderId: "136234075478",
+  appId: "1:136234075478:web:88f16333ad85f6bffc02f7",
+  measurementId: "G-YN8QRT3Q3W"
 };
+
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
+</script>
 
+<script>
 /* NAV */
 function goHome(){ homeView.style.display="block"; addView.style.display="none"; listView.style.display="none"; }
 function showAdd(){ homeView.style.display="none"; addView.style.display="block"; listView.style.display="none"; }
 function showList(){ homeView.style.display="none"; addView.style.display="none"; listView.style.display="block"; renderList(); }
 
-/* ESTADO EDICIÓN */
-let editingProduct = null;
+/* CATEGORÍAS */
+function addCategory(){
+  const name = catName.value.trim();
+  const margin = +catMargin.value;
+  if(!name) return;
 
-/* GUARDAR / EDITAR */
-function saveProduct(){
+  db.collection("categories").doc(name).set({name, margin})
+    .then(()=> {
+      catName.value=""; catMargin.value="";
+      loadCategories();
+    });
+}
+
+/* PRODUCTOS */
+function addProduct(){
   const name = prodName.value.trim();
   const category = prodCat.value;
   const cost = +prodCost.value;
+  const iva = prodIva.checked;
   if(!name || !category || !cost) return;
 
-  const data = { name, category, price: cost };
+  const catMargin = categories.find(c=>c.name===category).margin;
+  let price = Math.round(cost*(1+catMargin/100)*(iva?1.21:1)/100)*100;
 
-  if(editingProduct && editingProduct !== name){
-    // cambió el nombre → borrar viejo
-    db.collection("products").doc(editingProduct).delete();
-  }
+  db.collection("products").doc(name).set({name, category, price})
+    .then(()=> {
+      prodName.value=""; prodCost.value=""; prodIva.checked=false; pricePreview.innerText="";
+      renderList();
+    });
+}
 
-  db.collection("products").doc(name).set(data).then(()=>{
-    editingProduct = null;
-    prodName.value = prodCost.value = "";
-    showList();
+/* CARGAR CATEGORÍAS */
+let categories = [];
+function loadCategories(){
+  db.collection("categories").get().then(snapshot=>{
+    categories = snapshot.docs.map(d=>d.data());
+    prodCat.innerHTML='<option></option>'+categories.map(c=>`<option>${c.name}</option>`).join("");
   });
 }
 
 /* LISTA */
 function renderList(){
   db.collection("products").get().then(snapshot=>{
+    const products = snapshot.docs.map(d=>d.data());
     listView.innerHTML="";
-    snapshot.forEach(doc=>{
-      const p = doc.data();
-      listView.innerHTML += `
-        <div class="card">
-          <strong>${p.name}</strong> - $${p.price}
-          <button onclick="editProduct('${p.name}')">✏️</button>
-          <button onclick="deleteProduct('${p.name}')">🗑</button>
+    categories.forEach(cat=>{
+      const group = products.filter(p=>p.category===cat.name);
+      if(!group.length) return;
+      const card = document.createElement("div");
+      card.className="card";
+      card.innerHTML=`<h3>${cat.name}</h3>
+        <div class="table-header">
+          <div>Producto</div><div>Precio</div><div>Acciones</div>
         </div>`;
+      group.forEach(p=>{
+        card.innerHTML+=`<div class="table-row">
+          <div>${p.name}</div>
+          <div>$ ${p.price}</div>
+          <div>
+            <button onclick="editProduct('${p.name}')">✏️</button>
+            <button onclick="deleteProduct('${p.name}')">🗑</button>
+          </div>
+        </div>`;
+      });
+      listView.appendChild(card);
     });
   });
 }
 
-/* EDITAR */
+/* EDITAR Y BORRAR */
+function deleteProduct(name){
+  if(!confirm(`¿Seguro que querés borrar "${name}"?`)) return;
+  db.collection("products").doc(name).delete().then(renderList);
+}
+
 function editProduct(name){
   db.collection("products").doc(name).get().then(doc=>{
+    if(!doc.exists) return;
     const p = doc.data();
-    editingProduct = name;
     showAdd();
-    prodName.value = p.name;
-    prodCat.value = p.category;
-    prodCost.value = p.price;
+    prodName.value=p.name; prodCat.value=p.category; prodCost.value=p.price;
   });
 }
 
-/* BORRAR */
-function deleteProduct(name){
-  if(confirm("¿Borrar producto?")){
-    db.collection("products").doc(name).delete().then(renderList);
-  }
+/* BUSCADOR */
+const clearBtn = document.getElementById("clearSearch");
+const searchInput = document.getElementById("searchInput");
+const searchResults = document.getElementById("searchResults");
+
+function searchProducts(){
+  const t=searchInput.value.toLowerCase();
+  searchResults.innerHTML="";
+  clearBtn.style.display = t ? "block" : "none";
+  if(!t) return;
+
+  db.collection("products").get().then(snapshot=>{
+    snapshot.docs.map(d=>d.data()).filter(p=>p.name.toLowerCase().includes(t))
+      .forEach(p=>{
+        searchResults.innerHTML+=`<div class="search-card">
+          <div><strong>${p.name}</strong><br>$ ${p.price}</div>
+          <div class="search-actions">
+            <button onclick="editProduct('${p.name}')">✏️</button>
+            <button onclick="deleteProduct('${p.name}')">🗑</button>
+          </div>
+        </div>`;
+      });
+  });
 }
+
+searchInput.addEventListener("input", searchProducts);
+searchInput.addEventListener("keydown", e=>{ if(e.key==="Enter"){ e.preventDefault(); searchProducts(); }});
+clearBtn.addEventListener("click", ()=>{ searchInput.value=""; searchResults.innerHTML=""; clearBtn.style.display="none"; goHome(); });
+
+loadCategories(); renderList();
 </script>
 
 </body>
