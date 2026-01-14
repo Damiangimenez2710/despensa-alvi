@@ -28,6 +28,8 @@ header button.secondary{background:#e8eaed;color:#000}
 .card{background:white;border-radius:16px;padding:20px;margin-bottom:20px;box-shadow:0 2px 8px rgba(0,0,0,.05)}
 input,select{width:100%;padding:14px;margin-bottom:12px;border-radius:10px;border:1px solid #ccc}
 .soft-btn{width:100%;padding:15px;border-radius:12px;border:none;background:#1a73e8;color:white;cursor:pointer}
+.delete-btn{background:#e53935;margin-top:8px}
+.table-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0}
 </style>
 </head>
 
@@ -36,8 +38,8 @@ input,select{width:100%;padding:14px;margin-bottom:12px;border-radius:10px;borde
 <header>
   <h2 onclick="goHome()">Despensa Alvi</h2>
   <div class="actions">
-    <button onclick="showAdd()">Agregar productos</button>
-    <button class="secondary" onclick="showList()">Lista de productos</button>
+    <button onclick="showAdd()">Agregar</button>
+    <button class="secondary" onclick="showList()">Lista</button>
   </div>
 </header>
 
@@ -46,13 +48,29 @@ input,select{width:100%;padding:14px;margin-bottom:12px;border-radius:10px;borde
 <div id="homeView"></div>
 
 <div id="addView" style="display:none">
+
+  <!-- CATEGORÍAS -->
   <div class="card">
-    <h3>Nuevo producto</h3>
+    <h3>Nueva categoría</h3>
+    <input id="catName" placeholder="Nombre de la categoría">
+    <input id="catMargin" type="number" placeholder="% ganancia">
+    <button class="soft-btn" onclick="addCategory()">Agregar categoría</button>
+  </div>
+
+  <div class="card">
+    <h3>Categorías existentes</h3>
+    <div id="categoryList"></div>
+  </div>
+
+  <!-- PRODUCTOS -->
+  <div class="card">
+    <h3>Producto</h3>
     <input id="prodName" placeholder="Nombre del producto">
     <select id="prodCat"></select>
-    <input id="prodCost" type="number" placeholder="Precio de costo">
+    <input id="prodCost" type="number" placeholder="Precio">
     <button class="soft-btn" onclick="saveProduct()">Guardar producto</button>
   </div>
+
 </div>
 
 <div id="listView" style="display:none"></div>
@@ -63,32 +81,71 @@ input,select{width:100%;padding:14px;margin-bottom:12px;border-radius:10px;borde
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
 <script>
-const firebaseConfig = {
-  apiKey: "AIzaSyDzDNWaEXQR7UFWrI3r3DhVN628iGwfqfQ",
-  authDomain: "despensa-alvi-c7db7.firebaseapp.com",
-  projectId: "despensa-alvi-c7db7"
-};
-firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
+const firebaseConfig={
+  apiKey:"AIzaSyDzDNWaEXQR7UFWrI3r3DhVN628iGwfqfQ",
+  authDomain:"despensa-alvi-c7db7.firebaseapp.com",
+  projectId:"despensa-alvi-c7db7"
+}
+firebase.initializeApp(firebaseConfig)
+const db=firebase.firestore()
 
 /* NAV */
 function goHome(){homeView.style.display="block";addView.style.display="none";listView.style.display="none"}
-function showAdd(){homeView.style.display="none";addView.style.display="block";listView.style.display="none"}
+function showAdd(){homeView.style.display="none";addView.style.display="block";listView.style.display="none";loadCategories()}
 function showList(){homeView.style.display="none";addView.style.display="none";listView.style.display="block";renderList()}
 
 /* CATEGORÍAS */
 let categories=[]
+
 function loadCategories(){
   db.collection("categories").get().then(s=>{
     categories=s.docs.map(d=>d.data())
     prodCat.innerHTML='<option></option>'+categories.map(c=>`<option>${c.name}</option>`).join("")
+    renderCategoryList()
   })
 }
 
-/* 🔑 ESTADO EDICIÓN */
-let editingProductName = null
+function renderCategoryList(){
+  categoryList.innerHTML=""
+  categories.forEach(c=>{
+    categoryList.innerHTML+=`
+      <div class="table-row">
+        <b>${c.name}</b>
+        <button onclick="deleteCategory('${c.name}')">🗑</button>
+      </div>`
+  })
+}
 
-/* GUARDAR / EDITAR PRODUCTO */
+function addCategory(){
+  const name=catName.value.trim()
+  const margin=+catMargin.value
+  if(!name)return
+  db.collection("categories").doc(name).set({name,margin}).then(()=>{
+    catName.value=""
+    catMargin.value=""
+    loadCategories()
+  })
+}
+
+function deleteCategory(name){
+  if(!confirm(`Eliminar categoría "${name}" y TODOS sus productos?`))return
+
+  db.collection("products").where("category","==",name).get()
+    .then(s=>{
+      const batch=db.batch()
+      s.docs.forEach(d=>batch.delete(d.ref))
+      batch.delete(db.collection("categories").doc(name))
+      return batch.commit()
+    })
+    .then(()=>{
+      loadCategories()
+      renderList()
+    })
+}
+
+/* PRODUCTOS */
+let editingProductName=null
+
 function saveProduct(){
   const name=prodName.value.trim()
   const category=prodCat.value
@@ -97,7 +154,7 @@ function saveProduct(){
 
   const data={name,category,price:cost}
 
-  if(editingProductName && editingProductName!==name){
+  if(editingProductName&&editingProductName!==name){
     db.collection("products").doc(editingProductName).delete()
   }
 
@@ -109,26 +166,8 @@ function saveProduct(){
   })
 }
 
-/* LISTA */
-function renderList(){
-  db.collection("products").get().then(s=>{
-    listView.innerHTML=""
-    s.forEach(d=>{
-      const p=d.data()
-      listView.innerHTML+=`
-        <div class="card">
-          <b>${p.name}</b> - $${p.price}
-          <button onclick="editProduct('${p.name}')">✏️</button>
-          <button onclick="deleteProduct('${p.name}')">🗑</button>
-        </div>`
-    })
-  })
-}
-
-/* EDITAR */
 function editProduct(name){
   db.collection("products").doc(name).get().then(d=>{
-    if(!d.exists)return
     const p=d.data()
     editingProductName=name
     showAdd()
@@ -138,11 +177,26 @@ function editProduct(name){
   })
 }
 
-/* BORRAR */
 function deleteProduct(name){
   if(confirm("¿Borrar producto?")){
     db.collection("products").doc(name).delete().then(renderList)
   }
+}
+
+/* LISTA */
+function renderList(){
+  db.collection("products").get().then(s=>{
+    listView.innerHTML=""
+    s.forEach(d=>{
+      const p=d.data()
+      listView.innerHTML+=`
+        <div class="card">
+          <b>${p.name}</b> (${p.category}) - $${p.price}
+          <button onclick="editProduct('${p.name}')">✏️</button>
+          <button onclick="deleteProduct('${p.name}')">🗑</button>
+        </div>`
+    })
+  })
 }
 
 loadCategories()
